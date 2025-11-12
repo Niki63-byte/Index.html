@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>QwertyStars - Mini</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --accent: #3b82f6;
+      --gold: #fbbf24;
+      --text: #e2e8f0;
+      --live: #8b5cf6;
+      --green: #10b981;
+      --red: #ef4444;
+      --purple: #a855f7;
+      --orange: #f97316;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow-x: hidden;
+      padding-bottom: 100px;
+      user-select: none;
+    }
+
+    .container { padding: 16px; }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .back-btn, .close-btn {
+      background: var(--card);
+      border: none;
+      border-radius: 12px;
+      width: 40px;
+      height: 40px;
+      color: var(--text);
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    /* Stats */
+    .stats {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      font-weight: 600;
+      font-size: 16px;
+    }
+    .stat img { width: 24px; height: 24px; }
+    .plus {
+      background: var(--accent);
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    /* LIVE */
+    .live {
+      background: linear-gradient(135deg, #6d28d9, #8b5cf6);
+      border-radius: 16px;
+      padding: 12px;
+      margin-bottom: 20px;
+      color: white;
+      font-weight: 700;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+    .live::-webkit-scrollbar { display: none; }
+    .live-item { font-size: 28px; }
+
+    /* Timer */
+    .timer {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 16px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--gold);
+      margin-bottom: 20px;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    /* Actions */
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .action-btn {
+      background: var(--card);
+      border: none;
+      border-radius: 16px;
+      padding: 16px;
+      color: white;
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: all 0.3s;
+      position: relative;
+      cursor: pointer;
+    }
+    .action-btn:active { transform: scale(0.98); }
+    .action-btn.free { background: var(--green); }
+    .action-btn.roulette { background: var(--accent); }
+    .action-btn.slots { background: var(--orange); }
+    .action-btn.promo { background: var(--purple); }
+    .action-btn.new {
+      position: absolute;
+      right: 16px;
+      background: var(--red);
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 8px;
+    }
+
+    /* Modal */
+    .modal {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .modal-content {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 24px;
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+      position: relative;
+    }
+    .modal-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: #94a3b8;
+      cursor: pointer;
+    }
+
+    /* Slots */
+    .slots-reels {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .reel {
+      width: 80px;
+      height: 80px;
+      background: #1a202c;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      border: 3px solid #334155;
+      overflow: hidden;
+    }
+    .spin-btn {
+      background: var(--gold);
+      color: black;
+      border: none;
+      padding: 14px 32px;
+      border-radius: 16px;
+      font-weight: 700;
+      font-size: 18px;
+      margin-top: 16px;
+      cursor: pointer;
+    }
+
+    /* Cases */
+    .cases-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .case-item {
+      background: #1a202c;
+      border-radius: 16px;
+      padding: 16px;
+      text-align: center;
+      border: 2px solid #334155;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .case-item:active { transform: scale(0.95); }
+    .case-item img { width: 48px; height: 48px; margin-bottom: 8px; }
+    .case-price { color: var(--gold); font-weight: 600; }
+
+    /* Bottom Nav */
+    .nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--card);
+      display: flex;
+      justify-content: space-around;
+      padding: 12px 0;
+      border-top: 1px solid #334155;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: #94a3b8;
+      font-size: 12px;
+      position: relative;
+      cursor: pointer;
+    }
+    .nav-item.active { color: var(--accent); }
+    .nav-item img { width: 24px; height: 24px; }
+    .badge {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: var(--red);
+      color: white;
+      font-size: 10px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <button class="back-btn" onclick="history.back()">←</button>
+      <div></div>
+      <button class="close-btn" onclick="closeApp()">✕</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat">
+        <span>⭐</span>
+        <span id="stars">45</span>
+        <div class="plus" onclick="addStars()">+</div>
+      </div>
+      <div class="stat">
+        <span>🎟️</span>
+        <span id="tickets">6</span>
+        <div class="plus" onclick="addTickets()">+</div>
+      </div>
+    </div>
+
+    <!-- LIVE -->
+    <div class="live">
+      <span>LIVE</span>
+      <div class="live-item">🎄</div>
+      <div class="live-item">🎂</div>
+      <div class="live-item">🐸</div>
+      <div class="live-item">❄️</div>
+      <div class="live-item">🎁</div>
+      <div class="live-item">🎉</div>
+    </div>
+
+    <!-- Timer -->
+    <div class="timer" id="timer">Через 19:20:35</div>
+
+    <!-- Actions -->
+    <div class="actions">
+      <button class="action-btn free" onclick="openCases()">
+        <span>🎁</span>
+        <div>
+          <div>Бесплатно</div>
+          <div style="font-size:14px; opacity:0.8;">2 кейса</div>
+        </div>
+      </button>
+
+      <button class="action-btn roulette" onclick="openRoulette()">
+        <span>🎯</span>
+        <div>
+          <div>Рулетка</div>
+          <div style="font-size:14px; opacity:0.8;">12 кейсов</div>
+        </div>
+      </button>
+
+      <button class="action-btn slots" onclick="openSlots()">
+        <span>🎰</span>
+        <div>
+          <div>Слоты</div>
+          <div style="font-size:14px; opacity:0.8;">Новое</div>
+        </div>
+        <span class="action-btn new">New</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <div class="nav">
+    <div class="nav-item active">
+      <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%233b82f6' viewBox='0 0 24 24'%3E%3Cpath d='M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z'/%3E%3C/svg%3E" />
+      <span>Кейсы</span>
+    </div>
+    <div class="nav-item">
+      <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%2394a3b8' viewBox='0 0 24 24'%3E%3Cpath d='M12 2L1 21h22L12 2zm0 3.5L19.5 19h-15L12 5.5z'/%3E%3C/svg%3E" />
+      <span>Конкурсы</span>
+      <div class="badge">new</div>
+    </div>
+    <div class="nav-item">
+      <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%2394a3b8' viewBox='0 0 24 24'%3E%3Cpath d='M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z'/%3E%3C/svg%3E" />
+      <span>Задания</span>
+      <div class="badge">5</div>
+    </div>
+    <div class="nav-item">
+      <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%2394a3b8' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z'/%3E%3C/svg%3E" />
+      <span>Лидеры</span>
+    </div>
+    <div class="nav-item">
+      <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='%2394a3b8' viewBox='0 0 24 24'%3E%3Cpath d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/%3E%3C/svg%3E" />
+      <span>Профиль</span>
+    </div>
+  </div>
+
+  <!-- Modal: Slots -->
+  <div class="modal" id="slotsModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('slotsModal')">✕</button>
+      <h2>🎰 Слоты</h2>
+      <div class="slots-reels">
+        <div class="reel" id="reel1">⭐</div>
+        <div class="reel" id="reel2">🎁</div>
+        <div class="reel" id="reel3">💎</div>
+      </div>
+      <button class="spin-btn" onclick="spinSlots()">Крутить за ⭐ 10</button>
+      <p style="margin-top:16px; font-size:14px; opacity:0.7;">3 одинаковых = большой приз!</p>
+    </div>
+  </div>
+
+  <!-- Modal: Cases -->
+  <div class="modal" id="casesModal">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('casesModal')">✕</button>
+      <h2>🎁 Открыть кейс</h2>
+      <div class="cases-grid">
+        <div class="case-item" onclick="openCase('common')">
+          <div>📦</div>
+          <div style="font-size:12px;">Обычный</div>
+          <div class="case-price">Бесплатно</div>
+        </div>
+        <div class="case-item" onclick="openCase('rare')">
+          <div>💎</div>
+          <div style="font-size:12px;">Редкий</div>
+          <div class="case-price">⭐ 49</div>
+        </div>
+        <div class="case-item" onclick="openCase('epic')">
+          <div>🦄</div>
+          <div style="font-size:12px;">Эпический</div>
+          <div class="case-price">⭐ 129</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Telegram WebApp
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+
+    function closeApp() {
+      tg.close();
+    }
+
+    function addStars() {
+      let stars = parseInt(document.getElementById('stars').textContent);
+      document.getElementById('stars').textContent = stars + 10;
+      tg.HapticFeedback.impactOccurred('light');
+    }
+
+    function addTickets() {
+      let tickets = parseInt(document.getElementById('tickets').textContent);
+      document.getElementById('tickets').textContent = tickets + 1;
+      tg.HapticFeedback.impactOccurred('light');
+    }
+
+    // Timer
+    function updateTimer() {
+      const timer = document.getElementById('timer');
+      let time = timer.textContent.replace('Через ', '');
+      let parts = time.split(':');
+      let total = parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2]);
+      if (total > 0) {
+        total--;
+        let h = Math.floor(total / 3600).toString().padStart(2, '0');
+        let m = Math.floor((total % 3600) / 60).toString().padStart(2, '0');
+        let s = (total % 60).toString().padStart(2, '0');
+        timer.textContent = `Через ${h}:${m}:${s}`;
+      }
+    }
+    setInterval(updateTimer, 1000);
+
+    // Modals
+    function openModal(id) {
+      document.getElementById(id).style.display = 'flex';
+      tg.HapticFeedback.impactOccurred('medium');
+    }
+    function closeModal(id) {
+      document.getElementById(id).style.display = 'none';
+    }
+
+    function openSlots() { openModal('slotsModal'); }
+    function openCases() { openModal('casesModal'); }
+    function openRoulette() { alert('🎯 Рулетка скоро будет доступна!'); }
+
+    // Slots Logic
+    const symbols = ['⭐', '🎁', '💎', '🎰', '🦄', '💰', '🎉', '🐸'];
+    function spinSlots() {
+      const stars = parseInt(document.getElementById('stars').textContent);
+      if (stars < 10) {
+        alert('Недостаточно звёзд!');
+        return;
+      }
+      document.getElementById('stars').textContent = stars - 10;
+
+      const reels = [document.getElementById('reel1'), document.getElementById('reel2'), document.getElementById('reel3')];
+      reels.forEach((reel, i) => {
+        reel.style.transition = 'none';
+        reel.style.transform = 'translateY(0)';
+        setTimeout(() => {
+          reel.style.transition = 'transform 2s cubic-bezier(0.2, 0.8, 0.2, 1)';
+          reel.style.transform = 'translateY(-1000px)';
+          setTimeout(() => {
+            const sym = symbols[Math.floor(Math.random() * symbols.length)];
+            reel.textContent = sym;
+            reel.style.transition = 'none';
+            reel.style.transform = 'translateY(0)';
+          }, 2000 + i * 200);
+        }, 100);
+      });
+
+      setTimeout(() => {
+        const s1 = reels[0].textContent;
+        const s2 = reels[1].textContent;
+        const s3 = reels[2].textContent;
+        if (s1 === s2 && s2 === s3) {
+          const win = 100 + Math.floor(Math.random() * 200);
+          document.getElementById('stars').textContent = parseInt(document.getElementById('stars').textContent) + win;
+          alert(`🎉 ДЖЕКПОТ! +${win} ⭐`);
+          tg.HapticFeedback.notificationOccurred('success');
+        } else {
+          tg.HapticFeedback.notificationOccurred('error');
+        }
+      }, 3000);
+    }
+
+    // Cases
+    function openCase(type) {
+      const stars = parseInt(document.getElementById('stars').textContent);
+      let cost = 0;
+      let items = [];
+
+      if (type === 'common') {
+        if (parseInt(document.getElementById('tickets').textContent) < 1) {
+          alert('Нет билетов!');
+          return;
+        }
+        document.getElementById('tickets').textContent = parseInt(document.getElementById('tickets').textContent) - 1;
+        items = ['🎨', '🎭', '🎪', '🎯', '🎲'];
+      } else if (type === 'rare') {
+        cost = 49;
+        if (stars < cost) { alert('Недостаточно звёзд!'); return; }
+        document.getElementById('stars').textContent = stars - cost;
+        items = ['💍', '⌚', '🚗', '🎸', '🏆'];
+      } else if (type === 'epic') {
+        cost = 129;
+        if (stars < cost) { alert('Недостаточно звёзд!'); return; }
+        document.getElementById('stars').textContent = stars - cost;
+        items = ['🦄', '💎', '👑', '🚀', '🏰'];
+      }
+
+      const item = items[Math.floor(Math.random() * items.length)];
+      alert(`Вы выиграли: ${item} из ${type === 'common' ? 'бесплатного' : type} кейса!`);
+      tg.HapticFeedback.notificationOccurred('success');
+    }
+
+    // Init
+    updateTimer();
+  </script>
+</body>
+</html>
