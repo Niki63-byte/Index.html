@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>QwertyStars — Mini App</title>
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<style>
+  /* ====== RESET & BASE ====== */
+  :root{
+    --bg-1: #0c2340;
+    --bg-2: #0d3a69;
+    --card: rgba(255,255,255,0.04);
+    --accent: #3aa1ff;
+    --gold: #f6c24c;
+    --white: #fff;
+    --soft: rgba(255,255,255,0.06);
+    --glass: rgba(255,255,255,0.03);
+    --danger: #ff5a7a;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  }
+  html,body{height:100%;margin:0;background: linear-gradient(180deg,var(--bg-1),var(--bg-2));-webkit-font-smoothing:antialiased;color:var(--white);}
+  *{box-sizing:border-box}
+  button{font:inherit}
+  /* ====== APP SHELL ====== */
+  .app{
+    max-width:420px;
+    margin:0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    padding:14px;
+    gap:12px;
+  }
+  header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .btn-ghost{
+    background:var(--glass);
+    border-radius:14px;padding:8px 12px;color:var(--white);border:0;
+  }
+  .balance{
+    background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+    border-radius:14px;padding:12px;display:flex;align-items:center;gap:12px;box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+  }
+  .balance .star{
+    background:linear-gradient(90deg,#ffd76b,#ffb84a);
+    padding:10px;border-radius:12px;font-weight:700;color:#222;min-width:56px;text-align:center;
+  }
+  .balance .meta{flex:1}
+  .balance .meta .title{font-size:14px;opacity:0.9}
+  .balance .meta .sub{font-size:12px;opacity:0.7}
+  .add-stars{background:linear-gradient(90deg,var(--accent),#6bd0ff);padding:8px 12px;border-radius:12px;color:#042033;border:0;font-weight:600}
+  /* ====== NAV ====== */
+  .nav{
+    display:flex;gap:6px;justify-content:space-between;margin-top:auto;
+    position:sticky;bottom:12px;
+  }
+  .nav button{flex:1;padding:12px 8px;border-radius:14px;border:0;background:var(--glass);color:var(--white);font-weight:600}
+  .nav .active{background:linear-gradient(90deg,var(--accent),#6bd0ff);color:#012;}
+  /* ====== PAGES ====== */
+  .page{display:none;flex-direction:column;gap:12px}
+  .page.active{display:flex}
+  /* ====== LIST GRID ====== */
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .case{
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));
+    padding:10px;border-radius:12px;position:relative;overflow:hidden;
+  }
+  .case .thumb{height:110px;background:linear-gradient(180deg,#173a64,#0d2745);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:28px}
+  .case .title{margin-top:8px;font-weight:700}
+  .case .price{display:flex;align-items:center;gap:8px;margin-top:6px}
+  .case .price .cost{background:rgba(255,255,255,0.06);padding:6px 10px;border-radius:12px}
+  .case .limited{position:absolute;top:10px;left:10px;background:linear-gradient(90deg,#ff8a8a,#ff5a7a);padding:6px 8px;border-radius:10px;font-size:12px}
+  .rarity{font-size:12px;opacity:0.8}
+  .open-btn{margin-top:8px;background:linear-gradient(90deg,#ffd76b,#ffb84a);padding:10px;border-radius:12px;border:0;color:#222;font-weight:800;width:100%}
+  /* ====== DETAIL ====== */
+  .detail{
+    padding:14px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));
+  }
+  .detail .big-thumb{height:160px;border-radius:12px;background:linear-gradient(90deg,#1b6fb1,#0a3b6b);display:flex;align-items:center;justify-content:center;font-size:36px}
+  .detail .info{margin-top:10px}
+  /* ====== INVENTORY ====== */
+  .inventory-list{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .item-card{background:var(--card);padding:10px;border-radius:12px;min-height:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+  .item-card .name{margin-top:8px;font-size:13px;text-align:center}
+  .badge{position:absolute;top:8px;right:8px;background:linear-gradient(90deg,#ff75a2,#ffb77a);padding:4px 6px;border-radius:8px;font-size:11px}
+  /* ====== MODAL / OPENING ====== */
+  .modal{
+    position:fixed;inset:0;display:flex;align-items:flex-end;justify-content:center;padding:18px;background:linear-gradient(180deg,rgba(0,0,0,0.35),rgba(0,0,0,0.6));visibility:hidden;opacity:0;transition:all .25s;
+  }
+  .modal.show{visibility:visible;opacity:1}
+  .open-panel{width:100%;max-width:420px;background:linear-gradient(180deg,#071a2b,#0d2640);border-radius:14px;padding:16px;box-shadow:0 18px 40px rgba(0,0,0,0.6)}
+  .slot{height:120px;background:linear-gradient(180deg,#112b4c,#0f2342);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:34px;color:#fff}
+  .open-animate{display:flex;gap:8px;align-items:center;justify-content:center;padding:12px}
+  .reveal{margin-top:12px;display:flex;align-items:center;justify-content:center;flex-direction:column}
+  .reveal .prize{font-size:22px;font-weight:800;padding:10px 14px;border-radius:12px;background:linear-gradient(90deg,#fff1b8,#ffe9a0);color:#131313}
+  /* spinner */
+  .spinner{border:4px solid rgba(255,255,255,0.06);border-top-color:var(--accent);width:36px;height:36px;border-radius:50%;animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  /* ====== SMALL HELPERS ====== */
+  .muted{opacity:0.75;font-size:13px}
+  .center{text-align:center}
+  @media (max-width:420px){
+    .app{padding:12px}
+    .grid{grid-template-columns:repeat(2,1fr)}
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header>
+    <button class="btn-ghost" id="btn-back" style="visibility:hidden">← Назад</button>
+    <div style="flex:1;display:flex;align-items:center;justify-content:center">
+      <div class="muted">QwertyStars</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div class="muted" id="user-id">—</div>
+      <button class="btn-ghost" id="btn-close">✕</button>
+    </div>
+  </header>
+
+  <!-- BALANCE -->
+  <div class="balance">
+    <div class="star" id="balance-star">0 ⭐</div>
+    <div class="meta">
+      <div class="title">Ваш баланс</div>
+      <div class="sub" id="balance-sub">Звёзды используются для открытия наборов</div>
+    </div>
+    <button class="add-stars" id="btn-open-purchase">Купить</button>
+  </div>
+
+  <!-- PAGES -->
+  <main style="flex:1;display:flex;flex-direction:column;gap:12px;overflow:auto;padding-bottom:120px">
+    <!-- HOME / OPEN -->
+    <section class="page active" id="page-open">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <h3 style="margin:0">Открывай</h3>
+        <div class="muted">LIVE</div>
+      </div>
+
+      <div class="grid" id="cases-grid">
+        <!-- cases injected here -->
+      </div>
+    </section>
+
+    <!-- DETAIL -->
+    <section class="page" id="page-detail">
+      <div class="detail">
+        <div class="big-thumb" id="detail-thumb">🧿</div>
+        <div class="info">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-weight:800" id="detail-title">Название набора</div>
+              <div class="muted" id="detail-sub">Описание набора — что внутри</div>
+            </div>
+            <div style="text-align:right">
+              <div class="muted">Осталось</div>
+              <div id="detail-left">—</div>
+            </div>
+          </div>
+          <div style="margin-top:12px">
+            <div class="muted">Шансы</div>
+            <div id="detail-chances" style="margin-top:6px"></div>
+            <button class="open-btn" id="detail-open">Открыть за <span id="detail-cost">0</span> ⭐</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- INVENTORY -->
+    <section class="page" id="page-collection">
+      <h3 style="margin:0">Коллекция</h3>
+      <div class="muted" style="margin-bottom:6px">Все полученные предметы</div>
+      <div class="inventory-list" id="inventory-list">
+        <!-- items -->
+      </div>
+      <div class="muted center" id="collection-empty" style="display:none;margin-top:12px">Ваша коллекция пуста — откройте набор!</div>
+    </section>
+
+    <!-- PURCHASE -->
+    <section class="page" id="page-purchase">
+      <h3 style="margin:0">Получай Звезды</h3>
+      <div class="muted" style="margin-bottom:6px">Заглушка платёжной интеграции — тут будет покупка через Telegram Payments</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
+        <button class="open-btn" data-cost="69" data-amount="100">Купить 100 ⭐ за 69 ₽ (заглушка)</button>
+        <button class="open-btn" data-cost="299" data-amount="500">Купить 500 ⭐ за 299 ₽ (заглушка)</button>
+        <button class="open-btn" data-cost="599" data-amount="1200">Купить 1200 ⭐ за 599 ₽ (заглушка)</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <button id="nav-open" class="active">Кейсы</button>
+    <button id="nav-collection">Коллекция</button>
+    <button id="nav-purchase">Получай Звезды</button>
+  </nav>
+</div>
+
+<!-- MODAL OPEN -->
+<div class="modal" id="modal">
+  <div class="open-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div style="font-weight:800">Открытие набора</div>
+      <button class="btn-ghost" id="modal-close">Отмена</button>
+    </div>
+    <div style="margin-top:12px" id="open-area">
+      <div class="slot" id="slot1">?</div>
+      <div class="open-animate" style="justify-content:space-between">
+        <div id="open-spinner" style="display:flex;align-items:center;gap:10px">
+          <div class="spinner"></div>
+          <div class="muted">Открываем...</div>
+        </div>
+      </div>
+      <div class="reveal" id="reveal" style="display:none">
+        <div class="prize" id="prize-name">Результат</div>
+        <div class="muted" id="prize-meta" style="margin-top:8px"></div>
+        <div style="margin-top:10px;display:flex;gap:8px;">
+          <button class="btn-ghost" id="claim-btn">Ок</button>
+          <button class="open-btn" id="open-again" style="flex:1">Открыть ещё</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ========== CONFIG ========== */
+const USE_MOCK = true; // переключите в false для реальной работы с бэкендом
+const API_BASE = ''; // если используете бэкенд, укажите базовый URL, например: 'https://api.yourdomain.com'
+const ADMIN_NOTIFY_ENDPOINT = '/api/notify-admin'; // POST { userId, item, caseId, raw }
+const MOCK_DELAY = 900; // задержка в мс для имитации сетевых запросов
+
+/* ========== TELEGRAM WEBAPP INIT ========== */
+let tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+let TELEGRAM_USER = null;
+try {
+  if (tg) {
+    tg.expand?.();
+    tg.MainButton?.hide?.();
+  }
+} catch(e){
+  console.warn('tg init err', e)
+}
+
+/* ======= SAMPLE DATA (можно заменить с backend) ======= */
+const SAMPLE_CASES = [
+  { id: 'case1', title: 'Магическая Чаша', cost: 10, left: 238, thumb: '🧪', chances: [{name:'Common',chance:'85%'},{name:'Rare',chance:'14%'},{name:'Epic',chance:'1%'}]},
+  { id: 'case2', title: 'Тренировочный Гантель', cost: 50, left: 22334, thumb: '🏋️', chances: [{name:'Common',chance:'90%'},{name:'Rare',chance:'9%'},{name:'Legend',chance:'1%'}]},
+  { id: 'case3', title: 'Стильный Кеп', cost: 20, left: 12, thumb: '🧢', chances: [{name:'Common',chance:'75%'},{name:'Rare',chance:'24%'},{name:'NFT',chance:'1%'}]},
+  { id: 'case4', title: 'Романтический набор', cost: 5, left: 3, thumb: '💝', chances: [{name:'Common',chance:'95%'},{name:'Gift',chance:'5%'}], limited:true}
+];
+
+const MOCK_USER = { id: 'user_12345', stars: 45, inventory: [
+  { id:'itm1', name:'Старый медальон', type:'common'},
+  { id:'itm2', name:'Кепка Q', type:'rare'}
+] };
+
+/* ======= APP STATE ======= */
+const state = {
+  selectedCase: null,
+  user: null
+};
+
+/* ======= UTIL ======= */
+function $(id){return document.getElementById(id)}
+function fmtStars(n){ return `${n} ⭐`; }
+
+/* ======= INIT UI ======= */
+function init(){
+  bindNav();
+  renderCases();
+  bindModal();
+  bindPurchaseButtons();
+  loadUser();
+  renderInventory();
+  setupTg();
+}
+
+/* ======= TELEGRAM HELPERS ======= */
+function setupTg(){
+  if (!tg) {
+    console.log('Telegram WebApp not available — running in demo mode.');
+    $('user-id').innerText = 'demo';
+    return;
+  }
+  try {
+    const initDataUnsafe = tg.initDataUnsafe || {};
+    TELEGRAM_USER = initDataUnsafe.user || null;
+    $('user-id').innerText = TELEGRAM_USER ? (TELEGRAM_USER.username || TELEGRAM_USER.id) : 'tg-user';
+    // you can send a theme params or set header color: tg.setHeaderColor(...)
+  } catch(e){
+    console.warn('tg read user err', e);
+  }
+}
+
+/* ======= BACKEND / MOCKED API LAYER ======= */
+async function apiGET(path){
+  if (USE_MOCK) {
+    await wait(MOCK_DELAY);
+    if (path === '/api/balance') return { stars: MOCK_USER.stars };
+    if (path === '/api/cases') return SAMPLE_CASES;
+    if (path === '/api/inventory') return MOCK_USER.inventory;
+    return {};
+  } else {
+    const res = await fetch(API_BASE + path, { credentials:'include' });
+    return res.json();
+  }
+}
+
+async function apiPOST(path, body){
+  if (USE_MOCK) {
+    await wait(MOCK_DELAY);
+    if (path === '/api/open-case') {
+      // simple randomized prize algorithm for demo
+      const caseId = body.caseId;
+      const c = SAMPLE_CASES.find(x => x.id===caseId) || SAMPLE_CASES[0];
+      // determine prize
+      const r = Math.random()*100;
+      let prize = { id: 'p' + Date.now(), name:'Серебряная монета', type:'stars', amount: 5, rare:false };
+      if (r > 99) { prize = {id:'nft'+Date.now(), name:'NFT: Звёздочка', type:'nft', rare:true }; }
+      else if (r > 95) { prize = {id:'gift'+Date.now(), name:'Telegram Gift: Сердце', type:'gift', rare:true }; }
+      else if (r > 70) { prize = {id:'rare'+Date.now(), name:'Редкий предмет', type:'item', rare:true };}
+      else { prize = {id:'com'+Date.now(), name:'Обычный предмет', type:'item', rare:false };}
+      // modify mock user
+      if (prize.type === 'stars') MOCK_USER.stars += (prize.amount || 0);
+      else MOCK_USER.inventory.push({ id:prize.id, name:prize.name, type:prize.type, rare: prize.rare });
+      return { success:true, prize, newBalance: MOCK_USER.stars, raw: { debugR:r } };
+    }
+    if (path === '/api/purchase') {
+      // simulate purchase: add stars
+      const amount = body.amount || 0;
+      MOCK_USER.stars += amount;
+      return { success:true, newBalance: MOCK_USER.stars };
+    }
+    if (path === ADMIN_NOTIFY_ENDPOINT) {
+      console.log('MOCK notify admin payload:', body);
+      return { ok:true };
+    }
+    return { ok:true };
+  } else {
+    const res = await fetch(API_BASE + path, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify(body),
+      credentials:'include'
+    });
+    return res.json();
+  }
+}
+
+function wait(ms){ return new Promise(r=>setTimeout(r, ms)); }
+
+/* ======= UI RENDERING ======= */
+async function loadUser(){
+  if (USE_MOCK) {
+    state.user = MOCK_USER;
+    renderBalance();
+    return;
+  }
+  const bal = await apiGET('/api/balance');
+  state.user = { id: TELEGRAM_USER?.id || 'guest', stars: bal.stars || 0, inventory: [] };
+  renderBalance();
+  // load inventory as well
+}
+
+async function renderCases(){
+  const list = USE_MOCK ? SAMPLE_CASES : await apiGET('/api/cases');
+  const grid = $('cases-grid'); grid.innerHTML = '';
+  list.forEach(c=>{
+    const el = document.createElement('div'); el.className='case';
+    el.innerHTML = `
+      ${c.limited ? `<div class="limited">Ограничено</div>` : ''}
+      <div class="thumb">${c.thumb}</div>
+      <div class="title">${c.title}</div>
+      <div class="rarity">шанс: ${c.chances.map(x=>x.name==='NFT'?`${x.name} ${x.chance}`:x.chance).join(' • ')}</div>
+      <div class="price">
+        <div class="cost">${c.cost} ⭐</div>
+        <div style="flex:1;text-align:right" class="muted">${c.left} шт.</div>
+      </div>
+      <button class="open-btn" data-id="${c.id}" data-cost="${c.cost}">Открыть за ${c.cost} ⭐</button>
+    `;
+    grid.appendChild(el);
+  });
+  // bind open buttons
+  grid.querySelectorAll('.open-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=> openCaseById(btn.dataset.id));
+  });
+}
+
+async function renderInventory(){
+  const inv = USE_MOCK ? MOCK_USER.inventory : await apiGET('/api/inventory');
+  const list = $('inventory-list');
+  list.innerHTML = '';
+  if (!inv || inv.length===0) {
+    $('collection-empty').style.display = 'block';
+    return;
+  } else $('collection-empty').style.display = 'none';
+  inv.slice().reverse().forEach(it=>{
+    const card = document.createElement('div'); card.className='item-card';
+    card.innerHTML = `
+      ${it.rare ? `<div class="badge">Rare</div>` : ''}
+      <div style="font-size:28px">🎁</div>
+      <div class="name">${it.name}</div>
+      <div class="muted" style="margin-top:6px;font-size:12px">${it.type.toUpperCase()}</div>
+    `;
+    list.appendChild(card);
+  });
+}
+
+/* ======= NAV & PAGES ======= */
+function bindNav(){
+  const pages = { open: $('page-open'), collection: $('page-collection'), purchase: $('page-purchase'), detail: $('page-detail') };
+  function setActive(name){
+    Object.values(pages).forEach(p => p.classList.remove('active'));
+    if (name === 'open') pages.open.classList.add('active');
+    else if (name === 'collection') pages.collection.classList.add('active');
+    else if (name === 'purchase') pages.purchase.classList.add('active');
+    else if (name === 'detail') pages.detail.classList.add('active');
+    // nav btn active class
+    $('nav-open').classList.toggle('active', name==='open');
+    $('nav-collection').classList.toggle('active', name==='collection');
+    $('nav-purchase').classList.toggle('active', name==='purchase');
+    // back button visibility
+    $('btn-back').style.visibility = (name==='detail') ? 'visible' : 'hidden';
+  }
+  $('nav-open').addEventListener('click', ()=> setActive('open'));
+  $('nav-collection').addEventListener('click', ()=> { setActive('collection'); renderInventory(); });
+  $('nav-purchase').addEventListener('click', ()=> setActive('purchase'));
+
+  $('btn-back').addEventListener('click', ()=> setActive('open'));
+  $('btn-close').addEventListener('click', ()=> {
+    if (tg) tg.close(); else alert('close (demo)');
+  });
+}
+
+/* ======= DETAIL VIEW ======= */
+function openCaseById(caseId){
+  state.selectedCase = SAMPLE_CASES.find(x=>x.id===caseId) || SAMPLE_CASES[0];
+  // populate detail
+  $('detail-thumb').innerText = state.selectedCase.thumb || '🔷';
+  $('detail-title').innerText = state.selectedCase.title;
+  $('detail-sub').innerText = `Что внутри: ${state.selectedCase.title}`;
+  $('detail-left').innerText = (state.selectedCase.left || '∞') + ' шт.';
+  $('detail-cost').innerText = state.selectedCase.cost;
+  $('detail-chances').innerText = state.selectedCase.chances.map(c => `${c.name} ${c.chance}`).join(' • ');
+  // show detail page
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  $('page-detail').classList.add('active');
+  $('btn-back').style.visibility = 'visible';
+  $('detail-open').onclick = ()=> startOpen(state.selectedCase.id, state.selectedCase.cost);
+}
+
+/* ======= OPEN FLOW (modal) ======= */
+function bindModal(){
+  $('modal-close').addEventListener('click', ()=> closeModal());
+  $('claim-btn').addEventListener('click', ()=> { closeModal(); });
+  $('open-again').addEventListener('click', async ()=> {
+    if (state.selectedCase) await startOpen(state.selectedCase.id, state.selectedCase.cost);
+  });
+}
+
+function showModal(){ $('modal').classList.add('show'); $('open-spinner').style.display='flex'; $('reveal').style.display='none'; }
+function closeModal(){ $('modal').classList.remove('show'); }
+
+async function startOpen(caseId, cost){
+  // check balance
+  if (state.user && state.user.stars < cost) {
+    alert('Недостаточно Звёзд. Пополните баланс.');
+    return;
+  }
+  showModal();
+  $('slot1').innerText = '...';
+  // send open request
+  try {
+    // deduct locally immediately for snappy UI (revert on fail)
+    if (!USE_MOCK) state.user.stars -= cost;
+    renderBalance();
+
+    const resp = await apiPOST('/api/open-case', { userId: state.user?.id || 'guest', caseId});
+    // handle result
+    await wait(500);
+    $('open-spinner').style.display='none';
+    $('reveal').style.display='flex';
+    const prize = resp.prize || { name:'Ошибка', type:'unknown' };
+    $('prize-name').innerText = prize.name + (prize.amount ? ` +${prize.amount} ⭐` : '');
+    $('prize-meta').innerText = `Тип: ${prize.type}${prize.rare ? ' • Редкий!' : ''}`;
+    $('slot1').innerText = (prize.type === 'stars') ? '⭐' : (prize.type==='nft'?'🔰':'🎁');
+
+    // update local balance and inventory from resp
+    if (resp.newBalance !== undefined) {
+      state.user.stars = resp.newBalance;
+      renderBalance();
+    } else {
+      // else fetch balance
+      renderBalance();
+    }
+
+    // if prize rare (nft or gift or rare flag) -> notify admin
+    const isRare = prize.rare || ['nft','gift'].includes(prize.type);
+    if (isRare) {
+      // send admin notification (fire-and-forget)
+      try {
+        await apiPOST(ADMIN_NOTIFY_ENDPOINT, {
+          userId: state.user?.id || null,
+          caseId,
+          item: prize,
+          raw: resp.raw || null,
+          timestamp: Date.now()
+        });
+        console.log('admin notified for rare item');
+      } catch(e){
+        console.warn('notify failed', e);
+      }
+    }
+
+    // refresh inventory
+    await renderInventory();
+
+  } catch (err) {
+    console.error('open error', err);
+    alert('Ошибка открытия набора.');
+    // revert local deduction if non-mock
+    if (!USE_MOCK) { /* optionally reload balance */ }
+  }
+}
+
+/* ======= BALANCE & PURCHASE ======= */
+function renderBalance(){
+  const val = state.user ? (state.user.stars ?? 0) : 0;
+  $('balance-star').innerText = fmtStars(val);
+  $('balance-sub').innerText = `Баланс: ${val} звёзд`;
+}
+
+function bindPurchaseButtons(){
+  document.querySelectorAll('#page-purchase .open-btn').forEach(btn=>{
+    btn.addEventListener('click', async (e)=>{
+      const amount = parseInt(btn.dataset.amount || 0);
+      const cost = parseInt(btn.dataset.cost || 0);
+      // in real app: initiate tg payments or backend checkout
+      const ok = confirm(`Заглушка покупки: купить ${amount} ⭐ за ${cost} ₽?`);
+      if (!ok) return;
+      const resp = await apiPOST('/api/purchase', { userId: state.user?.id || 'guest', amount, cost });
+      if (resp && resp.newBalance !== undefined) {
+        state.user.stars = resp.newBalance;
+        renderBalance();
+        alert('Покупка завершена (заглушка).');
+      }
+    });
+  });
+
+  $('btn-open-purchase').addEventListener('click', ()=> {
+    document.getElementById('nav-purchase').click();
+  });
+}
+
+/* ======= STARTUP ======= */
+init();
+
+/* ======= EXTRA: Bind dynamic open buttons on home grid (also allow open from grid) ======= */
+// We already bound in renderCases()
+
+</script>
+</body>
+</html>
